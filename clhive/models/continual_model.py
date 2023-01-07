@@ -84,7 +84,10 @@ class ContinualModel(nn.Module):
         return self.backbone(x)
 
     def forward_head(
-        self, x: torch.Tensor, t: Optional[torch.Tensor] = None
+        self, 
+        x: torch.Tensor, 
+        y: Optional[torch.Tensor] = None,
+        t: Optional[torch.Tensor] = None
     ) -> torch.Tensor:
         if (t is None) or (not isinstance(self.scenario, TaskIncremental)):
             return self.heads[0](x)
@@ -102,8 +105,28 @@ class ContinualModel(nn.Module):
         return pred
 
     def forward(
-        self, x: torch.Tensor, t: Optional[torch.Tensor] = None
+        self, 
+        x: torch.Tensor, 
+        y: Optional[torch.Tensor] = None,
+        t: Optional[torch.Tensor] = None
     ) -> torch.Tensor:
+        """
+        Perform computation of blocks in the order define in get_blocks.
+        """
+        if isinstance(self.scenario, TaskIncremental):
+            assert t.max() < len(
+                self.heads
+            ), f"head number {t} does not exist in `ContinualModel.heads`"
+
+        x = self.forward_backbone(x)
+        x = self.forward_head(x, t)
+        return x
+
+    def predict(
+        self, 
+        x: torch.FloatTensor, 
+        t: torch.FloatTensor
+    ) -> torch.FloatTensor:
         """
         Perform computation of blocks in the order define in get_blocks.
         """
