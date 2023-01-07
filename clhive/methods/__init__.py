@@ -6,7 +6,7 @@ import torch
 from .base import BaseMethod
 from ..data import ReplayBuffer
 from ..loggers import BaseLogger
-from ..models import ContinualModel
+from ..models import ContinualModel, ContinualAngularModel
 from ..utils.registry_utils import import_all_modules
 
 
@@ -56,7 +56,7 @@ def register_method(name, bypass_checks=False):
 
 def auto_method(
     name: str,
-    model: Union[ContinualModel, torch.nn.Module],
+    model: Union[ContinualModel, ContinualAngularModel, torch.nn.Module],
     optim: torch.optim,
     logger: Optional[BaseLogger] = None,
     buffer: Optional[ReplayBuffer] = None,

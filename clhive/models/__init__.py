@@ -59,6 +59,7 @@ def auto_model(
 import_all_modules(FILE_ROOT, "clhive.models")
 
 from .continual_model import ContinualModel
+from .continual_angular_model import ContinualAngularModel
 from .resnet import resnet18, resnet34, resnet50, resnet101
 from .vision_transformer import (
     vit_tiny_patch16,
@@ -72,3 +73,4 @@ from .vision_transformer import (
     vit_huge_patch14,
 )
 from .mlp import LinearClassifier, DistLinear, MLP
+from .continual_angular_model import BaseFace, ArcFace, CosFace, GAsoftmax, SphereFace
