@@ -4,14 +4,14 @@ import torch
 
 from . import register_method, BaseMethod
 from ..loggers import BaseLogger
-from ..models import ContinualModel
+from ..models import ContinualModel, ContinualAngularModel
 
 
 @register_method("lwf")
 class LwF(BaseMethod):
     def __init__(
         self,
-        model: Union[ContinualModel, torch.nn.Module],
+        model: Union[ContinualModel, ContinualAngularModel, torch.nn.Module],
         optim: torch.optim,
         logger: Optional[BaseLogger] = None,
         **kwargs,
@@ -19,13 +19,13 @@ class LwF(BaseMethod):
         """_summary_
 
         Args:
-            model (Union[ContinualModel, torch.nn.Module]): _description_
+            model (Union[ContinualModel, ContinualAngularModel, torch.nn.Module]): _description_
             optim (torch.optim): _description_
             logger (Optional[BaseLogger], optional): _description_. Defaults to None.
 
         Returns:
             LwF: _description_
-        """
+        """    
         super().__init__(model, optim, logger)
 
         self.loss = torch.nn.CrossEntropyLoss()
@@ -54,6 +54,7 @@ class LwF(BaseMethod):
         self,
         features: torch.FloatTensor,
         data: torch.FloatTensor,
+        y: torch.Tensor,
         current_model: torch.nn.Module,
         current_task: torch.FloatTensor,
     ) -> torch.FloatTensor:
@@ -65,10 +66,10 @@ class LwF(BaseMethod):
         for task_id in range(current_task[0]):
             with torch.inference_mode():
                 predictions_old_tasks_old_model[task_id] = self.prev_model(
-                    data, t=torch.full_like(current_task, fill_value=task_id)
+                    data, y, t=torch.full_like(current_task, fill_value=task_id)
                 )
             predictions_old_tasks_new_model[task_id] = current_model.forward_head(
-                features, t=torch.full_like(current_task, fill_value=task_id)
+                features, y, t=torch.full_like(current_task, fill_value=task_id)
             )
 
         dist_loss = 0
@@ -81,9 +82,9 @@ class LwF(BaseMethod):
         return dist_loss
 
     def process_inc(
-        self, features: torch.FloatTensor, y: torch.FloatTensor, t: torch.FloatTensor
+        self, x: torch.FloatTensor, y: torch.FloatTensor, t: torch.FloatTensor
     ) -> torch.FloatTensor:
-        pred = self.model(x, t)
+        pred = self.model(x, y, t)
         loss = self.loss(pred, y)
 
         return loss
@@ -94,11 +95,11 @@ class LwF(BaseMethod):
 
         features = self.model.forward_backbone(x)
 
-        pred = self.model.forward_head(features, t)
+        pred = self.model.forward_head(features, y, t)
         inc_loss = self.loss(pred, y)
 
         lwf_loss = self.lwf_loss(
-            features=features, data=x, current_model=self.model, current_task=t
+            features=features, data=x, y=y, current_model=self.model, current_task=t
         )
 
         loss = inc_loss + self.lambda_0 * lwf_loss

@@ -7,7 +7,7 @@ from . import register_method
 from .er import ER
 from ..data import ReplayBuffer
 from ..loggers import BaseLogger
-from ..models import ContinualModel
+from ..models import ContinualModel, ContinualAngularModel
 
 
 def store_grad(params, grads, grad_dims):
@@ -58,7 +58,7 @@ def project(gxy: torch.Tensor, ger: torch.Tensor) -> torch.Tensor:
 class AGEM(ER):
     def __init__(
         self,
-        model: Union[ContinualModel, torch.nn.Module],
+        model: Union[ContinualModel, ContinualAngularModel, torch.nn.Module],
         optim: torch.optim,
         buffer: ReplayBuffer,
         logger: Optional[BaseLogger] = None,
@@ -68,7 +68,7 @@ class AGEM(ER):
         """_summary_
 
         Args:
-            model (Union[ContinualModel, torch.nn.Module]): _description_
+            model (Union[ContinualModel, ContinualAngularModel, torch.nn.Module]): _description_
             optim (torch.optim): _description_
             buffer (ReplayBuffer): _description_
             logger (Optional[BaseLogger], optional): _description_. Defaults to None.
@@ -110,7 +110,7 @@ class AGEM(ER):
         self.model.zero_grad()
 
         # rehearsal grad
-        pred = self.model(x, t)
+        pred = self.model(x, y, t)
         re_loss = self.loss(pred, y)
         re_loss.backward()
         store_grad(self.model.parameters, self.grad_re, self.grad_dims)

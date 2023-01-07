@@ -8,7 +8,7 @@ from fvcore.nn import FlopCountAnalysis, flop_count_table
 
 from ..config import Config
 from ..loggers import BaseLogger
-from ..models import ContinualModel
+from ..models import ContinualModel, ContinualAngularModel
 from ..utils import get_optimizer
 
 
@@ -17,7 +17,7 @@ class BaseMethod(nn.Module):
 
     def __init__(
         self,
-        model: Union[ContinualModel, nn.Module],
+        model: Union[ContinualModel, ContinualAngularModel, nn.Module],
         optim: torch.optim,
         logger: Optional[BaseLogger] = None,
         **kwargs,
@@ -25,7 +25,7 @@ class BaseMethod(nn.Module):
         """_summary_
 
         Args:
-            model (Union[ContinualModel, nn.Module]): _description_
+            model (Union[ContinualModel, ContinualAngularModel, nn.Module]): _description_
             optim (torch.optim): _description_
             logger (Optional[BaseLogger], optional): _description_. Defaults to None.
 
@@ -113,7 +113,7 @@ class BaseMethod(nn.Module):
     def predict(self, x: torch.FloatTensor, t: torch.FloatTensor) -> torch.FloatTensor:
         if t is None:
             t = 0
-        return self.model(x, t)
+        return self.model.predict(x, t)
 
     def on_task_start(self) -> None:
         """Callback executed at the start of each task."""

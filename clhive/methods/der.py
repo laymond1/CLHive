@@ -6,14 +6,14 @@ from . import register_method
 from .er import ER
 from ..data import ReplayBuffer
 from ..loggers import BaseLogger
-from ..models import ContinualModel
+from ..models import ContinualModel, ContinualAngularModel
 
 
 @register_method("der")
 class DER(ER):
     def __init__(
         self,
-        model: Union[ContinualModel, torch.nn.Module],
+        model: Union[ContinualModel, ContinualAngularModel, torch.nn.Module],
         optim: torch.optim,
         buffer: ReplayBuffer,
         logger: Optional[BaseLogger] = None,
@@ -23,7 +23,7 @@ class DER(ER):
         """_summary_
 
         Args:
-            model (Union[ContinualModel, torch.nn.Module]): _description_
+            model (Union[ContinualModel, ContinualAngularModel, torch.nn.Module]): _description_
             optim (torch.optim): _description_
             buffer (ReplayBuffer): _description_
             logger (Optional[BaseLogger], optional): _description_. Defaults to None.
@@ -61,7 +61,7 @@ class DER(ER):
         """
 
         # process data
-        logits = self.model(x, t)
+        logits = self.model(x, y, t)
         loss = self.loss(logits, y)
 
         return loss, logits.detach()
@@ -85,7 +85,7 @@ class DER(ER):
             torch.FloatTensor: _description_
         """
 
-        logits = self.model(x, t)
+        logits = self.model(x, y, t)
         loss = self.alpha * F.mse_loss(logits, re_logits)
 
         return loss
@@ -121,7 +121,7 @@ class DER(ER):
 class DERpp(DER):
     def __init__(
         self,
-        model: Union[ContinualModel, torch.nn.Module],
+        model: Union[ContinualModel, ContinualAngularModel, torch.nn.Module],
         optim: torch.optim,
         buffer: ReplayBuffer,
         logger: Optional[BaseLogger] = None,
@@ -131,7 +131,7 @@ class DERpp(DER):
         """_summary_
 
         Args:
-            model (Union[ContinualModel, torch.nn.Module]): _description_
+            model (Union[ContinualModel, ContinualAngularModel, torch.nn.Module]): _description_
             optim (torch.optim): _description_
             buffer (ReplayBuffer): _description_
             logger (Optional[BaseLogger], optional): _description_. Defaults to None.
@@ -173,7 +173,7 @@ class DERpp(DER):
             torch.FloatTensor: _description_
         """
 
-        logits = self.model(x, t)
+        logits = self.model(x, y, t)
         o1, o2 = logits.chunk(2)
 
         x1, x2 = x.chunk(2)

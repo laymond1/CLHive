@@ -4,14 +4,14 @@ import torch
 from . import register_method, BaseMethod
 from ..data import ReplayBuffer
 from ..loggers import BaseLogger
-from ..models import ContinualModel
+from ..models import ContinualModel, ContinualAngularModel
 
 
 @register_method("er")
 class ER(BaseMethod):
     def __init__(
         self,
-        model: Union[ContinualModel, torch.nn.Module],
+        model: Union[ContinualModel, ContinualAngularModel, torch.nn.Module],
         optim: torch.optim,
         buffer: ReplayBuffer,
         logger: Optional[BaseLogger] = None,
@@ -21,7 +21,7 @@ class ER(BaseMethod):
         """_summary_
 
         Args:
-            model (Union[ContinualModel, torch.nn.Module]): _description_
+            model (Union[ContinualModel, ContinualAngularModel, torch.nn.Module]): _description_
             optim (torch.optim): _description_
             buffer (ReplayBuffer): _description_
             logger (Optional[BaseLogger], optional): _description_. Defaults to None.
@@ -43,7 +43,7 @@ class ER(BaseMethod):
     def process_inc(
         self, x: torch.FloatTensor, y: torch.FloatTensor, t: torch.FloatTensor
     ) -> torch.FloatTensor:
-        pred = self.model(x, t)
+        pred = self.model(x, y, t)
         loss = self.loss(pred, y)
 
         return loss
@@ -51,7 +51,7 @@ class ER(BaseMethod):
     def process_re(
         self, x: torch.FloatTensor, y: torch.FloatTensor, t: torch.FloatTensor
     ) -> torch.FloatTensor:
-        pred = self.model(x, t)
+        pred = self.model(x, y, t)
         loss = self.loss(pred, y)
 
         return loss

@@ -4,7 +4,7 @@ import torch
 
 from . import register_method, BaseMethod
 from ..loggers import BaseLogger
-from ..models import ContinualModel
+from ..models import ContinualModel, ContinualAngularModel
 
 
 def zero_like_params_dict(model: torch.nn.Module):
@@ -35,7 +35,7 @@ def copy_params_dict(model: torch.nn.Module, copy_grad=False):
 class EWC(BaseMethod):
     def __init__(
         self,
-        model: Union[ContinualModel, torch.nn.Module],
+        model: Union[ContinualModel, ContinualAngularModel, torch.nn.Module],
         optim: torch.optim,
         train_loader: torch.utils.data.DataLoader,
         logger: Optional[BaseLogger] = None,
@@ -44,19 +44,19 @@ class EWC(BaseMethod):
         """_summary_
 
         Args:
-            model (Union[ContinualModel, torch.nn.Module]): _description_
+            model (Union[ContinualModel, ContinualAngularModel, torch.nn.Module]): _description_
             optim (torch.optim): _description_
             train_loader (torch.utils.data.DataLoader): _description_
             logger (Optional[BaseLogger], optional): _description_. Defaults to None.
 
         Returns:
             EWC: _description_
-        """
+        """        
         super().__init__(model, optim, logger)
 
         self.train_loader = train_loader
         self.loss = torch.nn.CrossEntropyLoss()
-        self.ewc_lambda = 100
+        self.ewc_lambda = 10 # cifar10 : 10
 
         self.saved_parameters = dict()
         self.importance_matrices = dict()
@@ -87,7 +87,7 @@ class EWC(BaseMethod):
             # targets -= current_task_id * self.args.n_classes_per_task
 
             optimizer.zero_grad()
-            predictions = model(data, t=tasks)
+            predictions = model(data, targets, t=tasks)
 
             loss = criterion(predictions, targets)
             loss.backward()
@@ -150,9 +150,9 @@ class EWC(BaseMethod):
         return loss
 
     def process_inc(
-        self, features: torch.FloatTensor, y: torch.FloatTensor, t: torch.FloatTensor
+        self, x: torch.FloatTensor, y: torch.FloatTensor, t: torch.FloatTensor
     ) -> torch.FloatTensor:
-        pred = self.model(x, t)
+        pred = self.model(x, y, t)
         loss = self.loss(pred, y)
 
         return loss
@@ -163,7 +163,7 @@ class EWC(BaseMethod):
 
         features = self.model.forward_backbone(x)
 
-        pred = self.model.forward_head(features, t)
+        pred = self.model.forward_head(features, y, t)
         inc_loss = self.loss(pred, y)
 
         ewc_loss = self.ewc_loss(

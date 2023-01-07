@@ -7,14 +7,15 @@ from . import register_method
 from .er import ER
 from ..data import ReplayBuffer
 from ..loggers import BaseLogger
-from ..models import ContinualModel
+from ..models import ContinualModel, ContinualAngularModel
 
 
+#TODO It is not completed, please implement icarl
 @register_method("icarl")
 class ICARL(ER):
     def __init__(
         self,
-        model: Union[ContinualModel, torch.nn.Module],
+        model: Union[ContinualModel, ContinualAngularModel, torch.nn.Module],
         optim: torch.optim,
         buffer: ReplayBuffer,
         logger: Optional[BaseLogger] = None,
@@ -24,7 +25,7 @@ class ICARL(ER):
         """_summary_
 
         Args:
-            model (Union[ContinualModel, torch.nn.Module]): _description_
+            model (Union[ContinualModel, ContinualAngularModel, torch.nn.Module]): _description_
             optim (torch.optim): _description_
             buffer (ReplayBuffer): _description_
             logger (Optional[BaseLogger], optional): _description_. Defaults to None.
@@ -32,7 +33,7 @@ class ICARL(ER):
 
         Returns:
             ICARL: _description_
-        """
+        """    
         super().__init__(
             model=model,
             optim=optim,
@@ -102,7 +103,7 @@ class ICARL(ER):
         Returns:
             torch.FloatTensor: _description_
         """
-        logits = self.model(x, t)
+        logits = self.model(x, y, t)
         label = F.one_hot(y, num_classes=logits.size(-1)).float()
 
         loss = self.loss(logits.view(-1), label.view(-1)).sum()
@@ -129,7 +130,7 @@ class ICARL(ER):
             with torch.no_grad():
                 tgt = F.sigmoid(self._old_model(x, t))
 
-            logits = self.model(x, t)
+            logits = self.model(x, y, t)
             loss = self.loss(logits.view(-1), tgt.view(-1)) / logits.size(0)
 
         return loss

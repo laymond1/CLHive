@@ -5,14 +5,14 @@ from . import register_method
 from .er import ER
 from ..data import ReplayBuffer
 from ..loggers import BaseLogger
-from ..models import ContinualModel
+from ..models import ContinualModel, ContinualAngularModel
 
 
 @register_method("er_ace")
 class ER_ACE(ER):
     def __init__(
         self,
-        model: Union[ContinualModel, torch.nn.Module],
+        model: Union[ContinualModel, ContinualAngularModel, torch.nn.Module],
         optim: torch.optim,
         buffer: ReplayBuffer,
         logger: Optional[BaseLogger] = None,
@@ -22,7 +22,7 @@ class ER_ACE(ER):
         """_summary_
 
         Args:
-            model (Union[ContinualModel, torch.nn.Module]): _description_
+            model (Union[ContinualModel, ContinualAngularModel, torch.nn.Module]): _description_
             optim (torch.optim): _description_
             buffer (ReplayBuffer): _description_
             logger (Optional[BaseLogger], optional): _description_. Defaults to None.
@@ -54,7 +54,7 @@ class ER_ACE(ER):
         self.seen_so_far = list(set(self.seen_so_far + present.tolist()))
 
         # process data
-        logits = self.model(x, t)
+        logits = self.model(x, y, t)
         mask = torch.zeros_like(logits)
 
         # unmask current classes
