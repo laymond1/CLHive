@@ -11,14 +11,14 @@ import torch.nn.functional as F
 from .base import BaseEvaluator
 from ...loggers import BaseLogger, Logger
 from ...methods import BaseMethod
-from ...models import ContinualModel, LinearClassifier
+from ...models import ContinualModel, ContinualAngularModel, LinearClassifier
 from ...scenarios import ClassIncremental, TaskIncremental
 
 
 class ProbeEvaluator(BaseEvaluator):
     def __init__(
         self,
-        method: BaseMethod,
+        method: Union[BaseMethod, ContinualModel, ContinualAngularModel],
         train_scenario: Union[ClassIncremental, TaskIncremental],
         eval_scenario: Union[ClassIncremental, TaskIncremental],
         n_epochs: int,
@@ -58,7 +58,7 @@ class ProbeEvaluator(BaseEvaluator):
 
         self.linear_heads = {
             str(t): LinearClassifier(
-                input_size=int(self.agent.model.backbone.last_hid),
+                input_size=int(self.agent.model.backbone.output_dim),
                 output_size=probe_n_classes,
             ).to(self.device)
             for t in task_list
