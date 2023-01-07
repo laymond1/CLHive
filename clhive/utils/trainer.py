@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional, Union, List
 import copy
 import os
 import time
@@ -77,9 +77,13 @@ class Trainer:
         finished_task_id = self.agent._current_task_id
         self.agent.on_task_end()
 
-        # Launch evaluators
+        # Launch evaluators : update code that it can use multi-evaluators
         if self.evaluator is not None:
-            self.evaluator.fit(current_task_id=finished_task_id)
+            if isinstance( self.evaluator, List):
+                for evaluator in self.evaluator:
+                    evaluator.fit(current_task_id=finished_task_id)
+            else:
+                self.evaluator.fit(current_task_id=finished_task_id)
 
     def on_training_start(self):
         """ """
