@@ -72,3 +72,4 @@ import_all_modules(FILE_ROOT, "clhive.data")
 from .buffer import ReplayBuffer
 from .cifar import SplitCIFAR10, SplitCIFAR100
 from .mnist import SeqMNIST
+from .pair_dataset import RepresentationCIFAR10, RepresentationCIFAR100
