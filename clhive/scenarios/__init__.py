@@ -1,2 +1,3 @@
 from .class_incremental import ClassIncremental
 from .task_incremental import TaskIncremental
+from .representation_incremental import RepresentationIncremental

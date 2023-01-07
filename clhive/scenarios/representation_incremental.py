@@ -1,0 +1,77 @@
+from typing import Callable, List, Optional, Union
+
+import numpy as np
+import torch
+import torch.nn.functional as F
+from torch.utils.data import Dataset, DataLoader
+
+from ..utils import get_metrics
+
+#TODO Task에 따라 진행만 될 수 있게 작성
+class RepresentationIncremental:
+    def __init__(
+        self,
+        dataset: Dataset,
+        n_tasks: int,
+        batch_size: int,
+        n_workers: Optional[int] = 0,
+        smooth_task_boundary: Optional[bool] = False, 
+    ) -> "RepresentationIncremental":
+        """_summary_
+
+        Args:
+            dataset (_type_): _description_
+            n_tasks (int): _description_
+            batch_size (int): _description_
+            n_workers (Optional[int], optional): _description_. Defaults to 0.
+            smooth_task_boundary (Optional[bool], optional): _description_. Defaults to False.
+
+        Returns:
+            RepresentationIncremental: _description_
+        """
+
+        self.dataset = dataset
+        self.n_tasks = n_tasks
+        self.batch_size = batch_size
+        self.n_workers = n_workers
+        self.smooth_task_boundary = smooth_task_boundary
+
+        self._task_id = 0
+        self.loader = self._create_dataloader(dataset=self.dataset)
+
+        # self.dataset.normalize_targets_per_task = False
+
+    @property
+    def n_samples(self) -> int:
+        """Total number of samples in the whole continual setting."""
+        return len(self.dataset)
+
+    @property
+    def n_classes(self) -> int:
+        """Total number of classes in the whole continual setting."""
+        if isinstance(self.dataset, torch.utils.data.Subset):
+            targets = np.array(self.dataset.testset.targets)[self.dataset.indices]
+        else:
+            targets = self.dataset.testset.targets
+
+        return len(np.unique(targets))
+
+    def _create_dataloader(self, dataset: Dataset) -> DataLoader:
+        loader = DataLoader(
+            dataset=dataset,
+            batch_size=self.batch_size,
+            num_workers=self.n_workers,
+            shuffle=False
+        )
+        return loader
+
+    def evaluate(self, feats, 
+            FPRs=['1e-4', '5e-4', '1e-3', '5e-3', '5e-2']):
+        # pair-wise scores
+        feats = F.normalize(feats.reshape(-1, 256), dim=1)
+        feats = feats.reshape(-1, 2, 256)
+        feats0 = feats[:, 0, :]
+        feats1 = feats[:, 1, :]
+        scores = torch.sum(feats0 * feats1, dim=1).tolist()
+
+        return get_metrics(self.dataset.retrieval_targets, scores, FPRs)
