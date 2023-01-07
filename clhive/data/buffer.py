@@ -249,7 +249,7 @@ class ReplayBuffer(nn.Module):
             return buffers
         else:
             idx_np = np.random.choice(buffers["x"].size(0), n_samples, replace=False)
-            indices = torch.from_numpy(idx_np)  # .to(self.bx.device)
+            indices = torch.from_numpy(idx_np).long()  # .to(self.bx.device)
 
             return OrderedDict({k: v[indices] for (k, v) in buffers.items()})
 
