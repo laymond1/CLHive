@@ -62,7 +62,7 @@ class BaseFace(nn.Module):
 class ArcFace(BaseFace):
     """ reference: <Additive Angular Margin Loss for Deep Face Recognition>
     """
-    def __init__(self, input_size, output_size, s=64., m=0.5, **kwargs):
+    def __init__(self, input_size, output_size, s=30., m=1.5, **kwargs):
         super().__init__(input_size, output_size, s, m, **kwargs)
 
     @torch.no_grad()
@@ -98,7 +98,7 @@ class CosFace(BaseFace):
     """reference1: <CosFace: Large Margin Cosine Loss for Deep Face Recognition>
        reference2: <Additive Margin Softmax for Face Verification>
     """
-    def __init__(self, input_size, output_size, s=64., m=0.35, **kwargs):
+    def __init__(self, input_size, output_size, s=30., m=1.5, **kwargs):
         super().__init__(input_size, output_size, s, m, **kwargs)
 
     @torch.no_grad()
