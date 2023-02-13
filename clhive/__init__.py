@@ -12,3 +12,4 @@ from clhive.models import auto_model
 from clhive.methods import auto_method
 from clhive.utils import evaluators
 from clhive.utils.trainer import Trainer
+from clhive.utils.trainer_supcon import SupConTrainer

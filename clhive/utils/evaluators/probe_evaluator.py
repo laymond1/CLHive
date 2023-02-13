@@ -80,7 +80,9 @@ class ProbeEvaluator(BaseEvaluator):
             )
 
             for epoch in range(self.n_epochs):
-                for _, (x, y, t) in enumerate(train_loader):
+                for _, (x, y, t, _) in enumerate(train_loader):
+                    if isinstance(x, list):
+                        x, _ = x
                     x, y, t = x.to(self.device), y.to(self.device), t.to(self.device)
 
                     with torch.no_grad():
@@ -111,7 +113,7 @@ class ProbeEvaluator(BaseEvaluator):
             n_ok, n_total = 0, 0
 
             # iterate over samples from task
-            for idx, (x, y, t) in enumerate(eval_loader):
+            for idx, (x, y, t, _) in enumerate(eval_loader):
                 x, y, t = x.to(self.device), y.to(self.device), t.to(self.device)
 
                 probe_id = task_id

@@ -131,6 +131,27 @@ def get_metrics(labels, scores, FPRs):
     return [('ACC', ACC), ('EER', EER), ('AUC', AUC)] + TPRs
 
 
+# --- Supcon utils
+    """ For SupCon Loss """
+    
+class TwoCropTransform:
+    """Create two crops of the same image"""
+    def __init__(self, transform):
+        self.transform = transform
+
+    def __call__(self, x):
+        return [self.transform(x), self.transform(x)]
+
+
+def warmup_learning_rate(args, epoch, batch_id, total_batches, optimizer):
+    if args.warm and epoch <= args.warm_epochs:
+        p = (batch_id + (epoch - 1) * total_batches) / \
+            (args.warm_epochs * total_batches)
+        lr = args.warmup_from + p * (args.warmup_to - args.warmup_from)
+
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = lr
+
 
 # --- MIR utils
 """ For MIR """

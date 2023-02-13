@@ -3,7 +3,7 @@ import torch
 
 from . import register_method, BaseMethod
 from ..loggers import BaseLogger
-from ..models import ContinualModel, ContinualAngularModel
+from ..models import ContinualModel, ContinualAngularModel, SupConLoss
 
 
 @register_method("finetuning")
@@ -33,9 +33,25 @@ class FineTuning(BaseMethod):
     def name(self):
         return "finetuning"
 
-    def observe(self, x: torch.FloatTensor, y: torch.FloatTensor, t: torch.FloatTensor):
+    def observe(self, x: torch.FloatTensor, y: torch.FloatTensor, t: torch.FloatTensor, not_aug_x: torch.FloatTensor):
         pred = self.model(x, y, t)
         loss = self.loss(pred, y)
+
+        self.update(loss)
+
+        return loss
+
+    def supcon_observe(
+        self, x: torch.FloatTensor, y: torch.FloatTensor, t: torch.FloatTensor, not_aug_x: torch.FloatTensor
+    ) -> torch.FloatTensor:
+        assert isinstance(self.loss, SupConLoss), "supcon_observe function must have SupconLoss"
+        bsz = y.shape[0]
+
+        # compute loss
+        features = self.model(x)
+        f1, f2 = torch.split(features, [bsz, bsz], dim=0)
+        features = torch.cat([f1.unsqueeze(1), f2.unsqueeze(1)], dim=1)
+        loss = self.loss(features, y)
 
         self.update(loss)
 

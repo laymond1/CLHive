@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.autograd import Variable
 
 from . import register_model
@@ -107,3 +108,20 @@ class MLP(nn.Module):
 
     def forward(self, x):
         return self.layers(x)
+
+@register_model("supconmlp")
+class SupConMLP(nn.Module):
+    """SupCon MLP"""
+    def __init__(self, input_size, output_size, **kwargs):
+        super(SupConMLP, self).__init__()
+        self.fc = nn.Sequential(
+                nn.Linear(input_size, input_size),
+                nn.ReLU(inplace=True),
+                nn.Linear(input_size, 128)
+            )
+        self.output_size = output_size
+        self.output_size = 128
+
+    def forward(self, x):
+        feats = F.normalize(self.fc(x), dim=1)
+        return feats

@@ -1,7 +1,8 @@
 from typing import Any, Callable, Dict, Optional, Sequence, Union
 
+from PIL import Image
+from torchvision import transforms
 from torchvision.datasets.cifar import CIFAR10, CIFAR100
-
 from . import register_dataset
 from .continual_dataset import ContinualDataset
 
@@ -11,7 +12,7 @@ class CIFARDataset(ContinualDataset):
     _CIFAR_TYPE = None
     _DEFAULT_N_TASKS = None
     _MEAN = (0.4914, 0.4822, 0.4465)
-    _STD = (0.2023, 0.1994, 0.2010)
+    _STD = (0.2470, 0.2435, 0.2615)
     _IMAGE_SIZE = 32
 
     def __init__(
@@ -22,7 +23,7 @@ class CIFARDataset(ContinualDataset):
         train: Optional[bool] = True,
         download: Optional[bool] = True,
     ) -> None:
-
+        
         assert self._CIFAR_TYPE in [
             "cifar10",
             "cifar100",
@@ -38,6 +39,7 @@ class CIFARDataset(ContinualDataset):
             transform=transform,
             normalize_targets_per_task=normalize_targets_per_task,
         )
+        self.not_aug_transform = transforms.Compose([transforms.ToTensor()])
 
     @classmethod
     def from_config(cls, config: Dict[str, Any], train: bool) -> "CIFARDataset":
@@ -56,6 +58,26 @@ class CIFARDataset(ContinualDataset):
 
         transform = get_transform(transform_config)
         return cls(root=root, transform=transform, train=train, download=True)
+    
+    def __getitem__(self, index: int):
+        assert index >= 0 and index < len(
+            self.dataset
+        ), f"Provided index ({index}) is outside of dataset range."
+
+        sample = self.dataset[index]
+        data, targets = sample
+
+        # to return a PIL Image
+        original_img = data.copy()
+
+        not_aug_img = self.not_aug_transform(original_img)
+
+        data = self.transform(data)
+
+        if self.normalize_targets_per_task and self.n_classes_per_task:
+            targets -= self._current_task * self.n_classes_per_task
+
+        return data, targets, self._current_task, not_aug_img
 
 
 @register_dataset("cifar10")
@@ -67,4 +89,5 @@ class SplitCIFAR10(CIFARDataset):
 @register_dataset("cifar100")
 class SplitCIFAR100(CIFARDataset):
     _CIFAR_TYPE = "cifar100"
-    _DEFAULT_N_TASKS = 20
+    _DEFAULT_N_TASKS = 20       
+    

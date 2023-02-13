@@ -110,6 +110,11 @@ class BaseMethod(nn.Module):
     ) -> torch.FloatTensor:
         raise NotImplementedError
 
+    def supcon_observe(
+        self, x: torch.FloatTensor, y: torch.FloatTensor, t: torch.FloatTensor, not_aug_x: torch.FloatTensor
+    ) -> torch.FloatTensor:
+        raise NotImplementedError
+
     def predict(self, x: torch.FloatTensor, t: torch.FloatTensor) -> torch.FloatTensor:
         if t is None:
             t = 0
