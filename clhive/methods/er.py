@@ -14,6 +14,7 @@ class ER(BaseMethod):
         model: Union[ContinualModel, ContinualAngularModel, torch.nn.Module],
         optim: torch.optim,
         buffer: ReplayBuffer,
+        transform: Optional[torch.nn.Module] = None,
         logger: Optional[BaseLogger] = None,
         n_replay_samples: Optional[int] = None,
         **kwargs,
@@ -35,6 +36,8 @@ class ER(BaseMethod):
         self.buffer = buffer
         self.n_replay_samples = n_replay_samples
         self.loss = torch.nn.CrossEntropyLoss()
+        if transform is not None:
+            self.transform = transform
 
     @property
     def name(self) -> str:
