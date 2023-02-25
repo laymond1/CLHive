@@ -6,6 +6,7 @@ from scipy.interpolate import interp1d
 
 import numpy as np 
 import os 
+import pandas as pd
 import random
 import torch
 
@@ -102,6 +103,50 @@ def save_(x, name="tmp.png"):
         x = x.reshape(-1, *x.shape[2:])
 
     save_image(x, name)
+
+
+# --- metrics utils
+def compute_metrics(results):
+    """
+    Given accuracy results list(np.array), compute all metrics performances such as 
+    [Average Accuracy, Average, Forgetting, Positive Backward Transfer, Forward Transfer]
+    """ 
+    n_tasks = results.shape[0]
+    
+    # compute average accuracy
+    return NotImplementedError
+
+
+
+def backward_transfer(results):
+    n_tasks = len(results)
+    li = []
+    for i in range(n_tasks - 1):
+        li.append(results[-1][i] - results[i][i])
+
+    return np.mean(li)
+
+
+def forward_transfer(results, random_results):
+    n_tasks = len(results)
+    li = []
+    for i in range(1, n_tasks):
+        li.append(results[i - 1][i] - random_results[i])
+
+    return np.mean(li)
+
+
+def forgetting(results):
+    n_tasks = len(results)
+    li = []
+    for i in range(n_tasks - 1):
+        results[i] += [0.0] * (n_tasks - len(results[i]))
+    np_res = np.array(results)
+    maxx = np.max(np_res, axis=0)
+    for i in range(n_tasks - 1):
+        li.append(maxx[i] - results[-1][i])
+
+    return np.mean(li)
 
 
 # --- Representation utils

@@ -5,7 +5,7 @@ import torch
 
 from . import register_method, BaseMethod
 from ..loggers import BaseLogger
-from ..models import ContinualModel, ContinualAngularModel
+from ..models import ContinualModel, ContinualAngularModel, SupConLoss
 
 
 @register_method("crl")
@@ -44,7 +44,7 @@ class CRL(BaseMethod):
             self.k = 10
             self.temper = 2
             self.beta = 10*1-3
-            self.lambda_0 = 1e-1
+            self.lambda_0 = 1
             self.prev_model = None
 
     @property
@@ -71,7 +71,7 @@ class CRL(BaseMethod):
 
         log_q = torch.log_softmax(current_out.gather(dim=1, index=s_set)/temper, dim=1) # input (new_model)
         log_p = torch.log_softmax(prev_out.gather(dim=1, index=s_set)/temper, dim=1) # target (old_model)
-        kl_loss = torch.nn.functional.kl_div(log_q, log_p, reduce=False, log_target=True)
+        kl_loss = torch.nn.functional.kl_div(log_q, log_p, reduction='none', log_target=True)
 
         delta = -beta * torch.softmax(prev_out.gather(dim=1, index=s_set)/temper, dim=1) * log_p
         loss = kl_loss.sum(dim=1) - delta.sum(dim=1)
@@ -114,29 +114,78 @@ class CRL(BaseMethod):
             )
 
         return dist_loss
+    
+    def crl_supconloss(
+        self,
+        features: torch.FloatTensor,
+        data: torch.FloatTensor,
+        y: torch.Tensor,
+        current_model: torch.nn.Module,
+        current_task: torch.FloatTensor,
+        ) -> torch.FloatTensor:
+        if self.prev_model is None:
+            return 0.0
 
-    def process_inc(
-        self, x: torch.FloatTensor, y: torch.FloatTensor, t: torch.FloatTensor
-    ) -> torch.FloatTensor:
-        pred = self.model(x, y, t)
-        loss = self.loss(pred, y)
+        predictions_old_tasks_old_model = dict()
+        predictions_old_tasks_new_model = dict()
+        for task_id in range(current_task[0]):
+            with torch.inference_mode():
+                predictions_old_tasks_old_model[task_id] = self.prev_model(
+                    data, y, t=torch.full_like(current_task, fill_value=task_id)
+                )
+            predictions_old_tasks_new_model[task_id] = features
 
-        return loss
+        dist_loss = 0
+        for task_id in predictions_old_tasks_old_model.keys():
+            dist_loss += self._distillation_loss(
+                current_out=predictions_old_tasks_new_model[task_id],
+                prev_out=predictions_old_tasks_old_model[task_id].clone(),
+                k=self.k,
+                temper=self.temper,
+                beta=self.beta
+            )
 
-    def observe(
-        self, x: torch.FloatTensor, y: torch.FloatTensor, t: torch.FloatTensor
-    ) -> torch.FloatTensor:
+        return dist_loss
+
+    def observe(self, 
+            x: torch.FloatTensor, y: torch.FloatTensor, t: torch.FloatTensor, 
+            not_aug_x: Optional[torch.FloatTensor] = None
+        ) -> torch.FloatTensor:
 
         features = self.model.forward_backbone(x)
         # 1. new loss
         pred = self.model.forward_head(features, y, t)
-        inc_loss = self.loss(pred, y)
+        new_loss = self.loss(pred, y)
         # 2. old loss
         crl_loss = self.crl_loss(
             features=features, data=x, y=y, current_model=self.model, current_task=t
         )
         # Total loss
-        loss = inc_loss + self.lambda_0 * crl_loss
+        loss = new_loss + self.lambda_0 * crl_loss
+        self.update(loss)
+
+        return loss
+    
+
+    def supcon_observe(self, 
+            x: torch.FloatTensor, y: torch.FloatTensor, t: torch.FloatTensor, 
+            not_aug_x: Optional[torch.FloatTensor] = None
+        ) -> torch.FloatTensor:
+        assert isinstance(self.loss, SupConLoss), "supcon_observe function must have SupconLoss"
+        bsz = y.shape[0]
+
+        # compute current model supcon loss
+        new_features = self.model(x) # [512, 128]
+        f1, f2 = torch.split(new_features, [bsz, bsz], dim=0)
+        features = torch.cat([f1.unsqueeze(1), f2.unsqueeze(1)], dim=1)
+        new_loss = self.loss(features, y)
+
+        crl_loss = self.crl_supconloss(
+            features=new_features, data=x, y=y, current_model=self.model, current_task=t
+        )
+
+        # Total loss
+        loss = new_loss + self.lambda_0 * crl_loss
         self.update(loss)
 
         return loss

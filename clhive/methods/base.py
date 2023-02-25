@@ -1,5 +1,6 @@
 from cmath import log
 import copy
+from argparse import Namespace
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import torch
@@ -20,6 +21,7 @@ class BaseMethod(nn.Module):
         model: Union[ContinualModel, ContinualAngularModel, nn.Module],
         optim: torch.optim,
         logger: Optional[BaseLogger] = None,
+        args: Optional[Namespace] = None,
         **kwargs,
     ) -> "BaseMethod":
         """_summary_

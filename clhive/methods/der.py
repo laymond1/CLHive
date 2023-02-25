@@ -6,7 +6,7 @@ from . import register_method
 from .er import ER
 from ..data import ReplayBuffer
 from ..loggers import BaseLogger
-from ..models import ContinualModel, ContinualAngularModel
+from ..models import ContinualModel, ContinualAngularModel, SupConLoss
 
 
 @register_method("der")
@@ -90,9 +90,10 @@ class DER(ER):
 
         return loss
 
-    def observe(
-        self, x: torch.FloatTensor, y: torch.FloatTensor, t: torch.FloatTensor
-    ) -> torch.FloatTensor:
+    def observe(self, 
+            x: torch.FloatTensor, y: torch.FloatTensor, t: torch.FloatTensor, 
+            not_aug_x: Optional[torch.FloatTensor] = None
+        ) -> torch.FloatTensor:
         inc_loss, logits = self.process_inc(x, y, t)
 
         re_loss = 0
@@ -113,6 +114,38 @@ class DER(ER):
         self.update(loss)
 
         self.buffer.add(batch={"x": x, "y": y, "t": t, "logits": logits})
+
+        return loss
+    
+    def supcon_observe(self, 
+        x: torch.FloatTensor, y: torch.FloatTensor, t: torch.FloatTensor, 
+        not_aug_x: torch.FloatTensor
+    ) -> torch.FloatTensor:
+        assert isinstance(self.loss, SupConLoss), "supcon_observe function must have SupconLoss"
+        bsz = y.shape[0]
+
+        # compute loss 
+        logits = self.model(x, y, t)
+        f1, f2 = torch.split(logits, [bsz, bsz], dim=0)
+        features = torch.cat([f1.unsqueeze(1), f2.unsqueeze(1)], dim=1)
+        inc_loss = self.loss(features, y)
+
+        re_loss = 0
+        if len(self.buffer) > 0:
+
+            if self.n_replay_samples is None:
+                self.n_replay_samples = x.size(0)
+
+            re_data = self.buffer.sample(n_samples=self.n_replay_samples)
+            
+            
+            buf_outputs = self.model(re_data["x"], re_data["y"], re_data["t"])
+            loss = self.alpha * F.mse_loss(buf_outputs, re_data["logits"])
+
+        loss = inc_loss + re_loss
+        self.update(loss)
+
+        self.buffer.add(batch={"x": not_aug_x, "y": y, "t": t, "logits": logits.detach()})
 
         return loss
 
