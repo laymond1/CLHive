@@ -13,6 +13,7 @@ class BaseEvaluator:
         eval_scenario: Union[ClassIncremental, TaskIncremental],
         logger: Optional[BaseLogger] = None,
         device: Optional[torch.device] = None,
+        name: Optional[str] = "",
     ) -> "BaseEvaluator":
         """_summary_
 
@@ -25,6 +26,7 @@ class BaseEvaluator:
         Returns:
             BaseEvaluator: _description_
         """
+        self.name = name
         if device is None:
             device = torch.device("cpu")
         self.device = device

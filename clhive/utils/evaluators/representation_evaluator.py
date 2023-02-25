@@ -14,7 +14,7 @@ from ...methods import BaseMethod
 from ...models import ContinualModel, LinearClassifier
 from ...scenarios import ClassIncremental, TaskIncremental, RepresentationIncremental
 
-#TODO 
+#TODO crl_runner.py에서 function val을 참고해서 evaulation 짜기
 class RepresentationEvaluator(BaseEvaluator):
     def __init__(
         self,
@@ -22,6 +22,7 @@ class RepresentationEvaluator(BaseEvaluator):
         eval_scenario: Union[ClassIncremental, TaskIncremental],
         logger: Optional[BaseLogger] = None,
         device: Optional[torch.device] = None,
+        name: Optional[str] = "Rep"
     ) -> "RepresentationEvaluator":
         """_summary_
 
@@ -34,7 +35,46 @@ class RepresentationEvaluator(BaseEvaluator):
         Returns:
             ContinualEvaluator: _description_
         """
-        super().__init__(method, eval_scenario, logger, device)
+        super().__init__(method, eval_scenario, logger, device, name)
+
+    # def _findCosineDistance(self, qeury_feat, retrieval_feat):
+    #     a = np.matmul(np.transpose(qeury_feat), retrieval_feat)
+    #     b = np.sum(np.multiply(qeury_feat, qeury_feat))
+    #     c = np.sum(np.multiply(retrieval_feat, retrieval_feat))
+    #     return 1 - (a / (np.sqrt(b) * np.sqrt(c)))
+
+    # @torch.no_grad()
+    # def _evaluate(self, task_id: int) -> List[float]:
+    #     """_summary_
+
+    #     Args:
+    #         task_id (int): _description_
+
+    #     Returns:
+    #         _type_: _description_
+    #     """
+    #     self.agent.eval()
+    #     mb_size = self.eval_scenario.batch_size
+    #     # need feat dim
+    #     dim = 256
+    #     feats = torch.zeros([self.eval_scenario.n_samples, 2, dim], dtype=torch.float32).to(self.device)
+
+    #     for idx, (query_x, retrieval_x, y) in enumerate(self.eval_scenario.loader):
+    #         query_x, retrieval_x, y = query_x.to(self.device), retrieval_x.to(self.device), y.to(self.device)
+
+    #         qeury_feat = self.agent.model.backbone(query_x)
+    #         retrieval_feat = self.agent.model.backbone(retrieval_x)
+
+    #         # find cosine distance
+    #         distance = self._findCosineDistance(qeury_feat.cpu().numpy(), retrieval_feat.cpu().numpy())
+
+    #         feats[(idx*mb_size):(idx+1)*mb_size, 0, :] = qeury_feat
+    #         feats[(idx*mb_size):(idx+1)*mb_size, 1, :] = retrieval_feat
+
+    #     results = self.eval_scenario.evaluate(feats.cpu())
+    #     results = dict(results)
+    #     metric = 'ACC'
+    #     return results[metric]
 
     @torch.no_grad()
     def _evaluate(self, task_id: int) -> List[float]:
@@ -79,21 +119,27 @@ class RepresentationEvaluator(BaseEvaluator):
         """Representation Evluation Setting is not divided into tasks.
            Just one task of pair-wise classification.
         """
-        print(
-            "\n",
-            f"Representation | Observed  ACC: {tasks_acc:.2f} |"
-        )
+        # print(
+        #     "\n",
+        #     f"Representation | Observed  ACC: {tasks_acc:.2f} |"
+        # )
+        msg = "\n" + f"Representation | Observed {self.name}-Acc: {tasks_acc:.2f} |"
+        self.logger.write_txt(msg=msg)
 
         return tasks_acc
 
-    def fit(self, current_task_id: int) -> None:
+    def fit(self, current_task_id: int, logger: BaseLogger) -> None:
         """_summary_
 
         Args:
             current_task_id (int): _description_
         """
+        self.logger = logger
+
         self.on_eval_start()
 
         tasks_acc = self._evaluate(task_id=current_task_id)
 
         self.on_eval_end(tasks_acc=tasks_acc, current_task_id=current_task_id)
+
+        return tasks_acc

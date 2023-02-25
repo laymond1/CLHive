@@ -20,6 +20,7 @@ class ContinualEvaluator(BaseEvaluator):
         eval_scenario: Union[ClassIncremental, TaskIncremental],
         logger: Optional[BaseLogger] = None,
         device: Optional[torch.device] = None,
+        name: Optional[str] = "Base",
     ) -> "ContinualEvaluator":
         """_summary_
 
@@ -33,7 +34,8 @@ class ContinualEvaluator(BaseEvaluator):
             ContinualEvaluator: _description_
         """
 
-        super().__init__(method, eval_scenario, logger, device)
+        super().__init__(method, eval_scenario, logger, device, name)
+
 
     @torch.no_grad()
     def _evaluate(self, task_id: int) -> List[float]:
@@ -52,7 +54,7 @@ class ContinualEvaluator(BaseEvaluator):
             n_ok, n_total = 0, 0
 
             # iterate over samples from task
-            for idx, (x, y, t) in enumerate(eval_loader):
+            for idx, (x, y, t, not_aug_x) in enumerate(eval_loader):
                 x, y, t = x.to(self.device), y.to(self.device), t.to(self.device)
 
                 logits = self.agent.predict(x=x, t=t)
@@ -74,20 +76,27 @@ class ContinualEvaluator(BaseEvaluator):
         """ """
         avg_obs_acc = np.mean(tasks_accs[: current_task_id + 1])
         avg_anytime_acc = np.mean(tasks_accs)
-        print(
-            "\n",
-            "\t".join([str(int(x)) for x in tasks_accs]),
-            f"  |  Avg observed Acc: {avg_obs_acc:.2f}  |  Avg anytime Acc: {avg_anytime_acc:.2f}",
-        )
+        # print(
+        #     "\n",
+        #     "\t".join([str(int(x)) for x in tasks_accs]),
+        #     f"  |  Avg observed Acc: {avg_obs_acc:.2f}  |  Avg anytime Acc: {avg_anytime_acc:.2f}",
+        # )
+        msg = "\n" + "\t".join([str(int(x)) for x in tasks_accs]) + \
+            f"  |  Avg observed {self.name}-Acc: {avg_obs_acc:.2f}  |  Avg anytime {self.name}-Acc: {avg_anytime_acc:.2f}"
+        self.logger.write_txt(msg=msg)
 
-    def fit(self, current_task_id: int) -> None:
+    def fit(self, current_task_id: int, logger: BaseLogger) -> None:
         """_summary_
 
         Args:
             current_task_id (int): _description_
         """
+        self.logger = logger
+
         self.on_eval_start()
 
         tasks_accs = self._evaluate(task_id=current_task_id)
 
         self.on_eval_end(tasks_accs=tasks_accs, current_task_id=current_task_id)
+
+        return tasks_accs

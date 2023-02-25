@@ -24,6 +24,7 @@ class ProbeEvaluator(BaseEvaluator):
         n_epochs: int,
         logger: Optional[BaseLogger] = None,
         device: Optional[torch.device] = None,
+        name: Optional[str] = "LP",
     ) -> "ProbeEvaluator":
         """_summary_
 
@@ -39,7 +40,7 @@ class ProbeEvaluator(BaseEvaluator):
             ProbeEvaluator: _description_
         """
 
-        super().__init__(method, eval_scenario, logger, device)
+        super().__init__(method, eval_scenario, logger, device, name)
 
         self.train_scenario = train_scenario
         self.n_epochs = n_epochs
@@ -140,24 +141,26 @@ class ProbeEvaluator(BaseEvaluator):
         """ """
         avg_obs_acc = np.mean(tasks_accs[: current_task_id + 1])
         avg_anytime_acc = np.mean(tasks_accs)
-        print(
-            "\n",
-            "\t".join([str(int(x)) for x in tasks_accs]),
-            f"  |  Avg observed Acc: {avg_obs_acc:.2f}  |  Avg anytime Acc: {avg_anytime_acc:.2f}",
-        )
+        msg = "\n" + "\t".join([str(int(x)) for x in tasks_accs]) + \
+            f"  |  Avg observed {self.name}-Acc: {avg_obs_acc:.2f}  |  Avg anytime {self.name}-Acc: {avg_anytime_acc:.2f}"
+        self.logger.write_txt(msg=msg)
 
         # Reset train_scenario
         self.train_scenario.set_task(task_id=current_task_id + 1)
 
-    def fit(self, current_task_id: int = None) -> None:
+    def fit(self, current_task_id: int = None, logger: BaseLogger = None) -> None:
         """_summary_
 
         Args:
             current_task_id (int, optional): _description_. Defaults to None.
         """
+        self.logger = logger
+
         self.on_eval_start()
 
         self._train_linear_heads(task_id=current_task_id)
         tasks_accs = self._evaluate(task_id=current_task_id)
 
         self.on_eval_end(tasks_accs, current_task_id)
+
+        return tasks_accs
