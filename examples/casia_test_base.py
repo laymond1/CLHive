@@ -7,7 +7,7 @@ from clhive.loggers import BaseLogger, Logger
 from clhive.data import SplitCIFAR10, SplitCIFAR100, RepresentationCIFAR10, CASIAWebDataset, LFWPairDataset
 from clhive.data import CASIAWebDataset, LFWPairDataset, CALFWPairDataset, CPLFWPairDataset, AGEDB30PairDataset
 from clhive.utils.evaluators import ContinualEvaluator, ProbeEvaluator, RepresentationEvaluator
-from clhive.utils.generic import seedEverything, warmup_learning_rate, TwoCropTransform
+from clhive.utils.generic import seedEverything, adjust_learning_rate, warmup_learning_rate, TwoCropTransform
 from clhive.scenarios import ClassIncremental, TaskIncremental, RepresentationIncremental
 from clhive.models import ContinualModel, ContinualAngularModel
 from clhive.methods import auto_method
@@ -31,13 +31,13 @@ def parse_option():
                         help='num of workers to use')
     parser.add_argument('--n_tasks', type=int, default=5,
                         help='number of tasks')
-    parser.add_argument('--n_epochs', type=int, default=1,
+    parser.add_argument('--n_epochs', type=int, default=10,
                         help='number of training epochs')
 
     # optimization
-    parser.add_argument('--learning_rate', type=float, default=0.05,
+    parser.add_argument('--learning_rate', type=float, default=0.01,
                         help='learning rate')
-    parser.add_argument('--lr_decay_epochs', type=str, default='700,800,900',
+    parser.add_argument('--lr_decay_epochs', type=str, default='4,8',
                         help='where to decay lr, can be a list')
     parser.add_argument('--lr_decay_rate', type=float, default=0.1,
                         help='decay rate for learning rate')
@@ -57,9 +57,9 @@ def parse_option():
     # method
     parser.add_argument('--cl_method', type=str, default='finetuning',
                         choices=['finetuning', 'er', 'der', 'lwf', 'ewc', 'crl'], help='choose continual learning method')
-    parser.add_argument('--buffer_capacity', type=int, default=5, help='buffer_capacity')
-    parser.add_argument('--backbone_name', type=str, default='iresnet50',
-                        choices=['resnet18', 'iresnet50', None], help='choose backbone_name')
+    parser.add_argument('--buffer_capacity', type=int, default=50*10, help='buffer_capacity')
+    parser.add_argument('--backbone_name', type=str, default='resnet50',
+                        choices=['resnet18', 'resnet50', 'iresnet50', None], help='choose backbone_name')
     parser.add_argument('--rep_method', type=str, default='linear',
                         choices=['linear', 'arcface', 'cosface', 'sphereface', 'supconmlp'], help='choose representation learning method (head_name)')
     

@@ -4,6 +4,7 @@ from sklearn import metrics
 from scipy.optimize import brentq
 from scipy.interpolate import interp1d
 
+import math
 import numpy as np 
 import os 
 import pandas as pd
@@ -117,7 +118,6 @@ def compute_metrics(results):
     return NotImplementedError
 
 
-
 def backward_transfer(results):
     n_tasks = len(results)
     li = []
@@ -186,6 +186,22 @@ class TwoCropTransform:
 
     def __call__(self, x):
         return [self.transform(x), self.transform(x)]
+
+
+def adjust_learning_rate(args, optimizer, epoch):
+    lr = args.learning_rate
+    if args.cosine:
+        eta_min = lr * (args.lr_decay_rate ** 3)
+        lr = eta_min + (lr - eta_min) * (
+                1 + math.cos(math.pi * epoch / args.epochs)) / 2
+    else:
+        steps = np.sum(epoch >= np.fromstring(args.lr_decay_epochs, dtype=int, sep=','))
+        if steps > 0:
+            lr = lr * (args.lr_decay_rate ** steps)
+
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
+
 
 
 def warmup_learning_rate(args, epoch, batch_id, total_batches, optimizer):
