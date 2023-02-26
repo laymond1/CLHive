@@ -134,7 +134,6 @@ class Trainer:
         """ turn dict into dataframe"""
         self.d['Base'] = np.array(self.d['Base'])
         self.d['LP'] = np.array(self.d['LP'])
-        self.d['Rep'] = np.array(self.d['Rep'])
         # 
         if self.evaluator is not None:
             if isinstance(self.evaluator, List):

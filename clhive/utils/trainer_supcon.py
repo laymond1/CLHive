@@ -13,7 +13,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 
 from .evaluators import BaseEvaluator
-from .generic import warmup_learning_rate
+from .generic import adjust_learning_rate, warmup_learning_rate
 from ..loggers import BaseLogger, Logger, AverageMeter, create_if_not_exists
 from ..methods import BaseMethod
 from ..models import ContinualModel, ContinualAngularModel, SupConLoss
@@ -57,6 +57,7 @@ class SupConTrainer:
 
         for epoch in range(self.n_epochs):
             # adjust learning rate
+            adjust_learning_rate(opt=self.opt, optimizer=self.agent.optim, epoch=epoch)
 
             batch_time = AverageMeter()
             data_time = AverageMeter()
@@ -154,7 +155,6 @@ class SupConTrainer:
         """ turn dict into dataframe"""
         self.d['Base'] = np.array(self.d['Base'])
         self.d['LP'] = np.array(self.d['LP'])
-        self.d['Rep'] = np.array(self.d['Rep'])
         # 
         if self.evaluator is not None:
             if isinstance(self.evaluator, List):
