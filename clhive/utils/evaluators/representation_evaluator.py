@@ -38,8 +38,8 @@ class RepresentationEvaluator(BaseEvaluator):
 
         self.dim = self.agent.model.backbone.output_dim
         # To log metrics by face dataset name(lfw, calfw, cplfw, agedb_30)
-        if self.eval_scenario.dataset._FACE_TYPE is not None :
-            self.name = self.name + self.eval_scenario.dataset._FACE_TYPE
+        if self.eval_scenario.dataset._DATA_TYPE in ["lfw", "calfw", "cplfw", "agedb_30"]:
+            self.name = self.name + self.eval_scenario.dataset._DATA_TYPE
 
     @torch.no_grad()
     def _evaluate(self, task_id: int) -> List[float]:

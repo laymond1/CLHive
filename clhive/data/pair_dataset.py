@@ -18,7 +18,7 @@ from ..utils import get_metrics
 #TODO This class need to be abstracted for BasePairDataset 
 class PairDataset(ContinualDataset):
     
-    _CIFAR_TYPE = None
+    _DATA_TYPE = None
     _DEFAULT_N_TASKS = None
     _MEAN = (0.4914, 0.4822, 0.4465)
     _STD = (0.2470, 0.2435, 0.2615)
@@ -31,10 +31,10 @@ class PairDataset(ContinualDataset):
         num_pairs: int = 5000,
         data_annot: Optional[str] = None,
     ) -> None:
-        assert self._CIFAR_TYPE in [
+        assert self._DATA_TYPE in [
             "repcifar10",
             "repcifar100",
-        ], "PairDataset must be subclassed and a valid _CIFAR_TYPE provided"
+        ], "PairDataset must be subclassed and a valid _DATA_TYPE provided"
 
         if transform is None:
             transform = transforms.Compose([
@@ -44,10 +44,10 @@ class PairDataset(ContinualDataset):
         self.transform = transform
         
         # Load dataset by args
-        if self._CIFAR_TYPE == "repcifar10":
+        if self._DATA_TYPE == "repcifar10":
             self.trainset = CIFAR10(root, train=True, download=True, transform=self.transform)
             self.testset = CIFAR10(root, train=False, download=True, transform=self.transform)
-        elif self._CIFAR_TYPE == "repcifar100":
+        elif self._DATA_TYPE == "repcifar100":
             self.trainset = CIFAR100(root, train=True, download=True, transform=self.transform)
             self.testset = CIFAR100(root, train=False, download=True, transform=self.transform)
 
@@ -61,7 +61,7 @@ class PairDataset(ContinualDataset):
             self.get_data()
         else:
             print("Load fixed indices.")
-            self.data_annot = data_annot + self._CIFAR_TYPE
+            self.data_annot = data_annot + self._DATA_TYPE
             self.set_data_annot(self.data_annot)
 
 
@@ -174,7 +174,7 @@ class PairFaceDataset(ContinualDataset):
     Returns:
         _type_: _description_
     """
-    _FACE_TYPE = None
+    _DATA_TYPE = None
     _DEFAULT_N_TASKS = None
     _MEAN = (0.5)
     _STD = (0.5)
@@ -188,12 +188,12 @@ class PairFaceDataset(ContinualDataset):
         transform: Optional[Callable] = None,
         data_annot: Optional[str] = None,
     ) -> None:
-        assert self._FACE_TYPE in [
+        assert self._DATA_TYPE in [
             "lfw",
             "calfw",
             "cplfw",
             "agedb_30",
-        ], "PairFaceDataset must be subclassed and a valid _FACE_TYPE provided"
+        ], "PairFaceDataset must be subclassed and a valid _DATA_TYPE provided"
         if transform is None:
             transform = transforms.Compose([
                 transforms.ToTensor(),
@@ -209,8 +209,8 @@ class PairFaceDataset(ContinualDataset):
         self.metrics = metrics
         self.data_annot = data_annot # '../cl-dataset/{}_ann.txt
 
-        print(f"Load {self._FACE_TYPE} annotation file.")
-        self.data_annot = data_annot + self._FACE_TYPE + "_ann.txt"
+        print(f"Load {self._DATA_TYPE} annotation file.")
+        self.data_annot = data_annot + self._DATA_TYPE + "_ann.txt"
 
         self.data, self.targets = self.get_dataset()
         self.retrieval_targets = self.targets
@@ -254,31 +254,31 @@ class PairFaceDataset(ContinualDataset):
 
 @register_dataset("repcifar10")
 class RepresentationCIFAR10(PairDataset):
-    _CIFAR_TYPE = "repcifar10"
+    _DATA_TYPE = "repcifar10"
     _DEFAULT_N_TASKS = 5 
 
 @register_dataset("repcifar100")
 class RepresentationCIFAR100(PairDataset):
-    _CIFAR_TYPE = "repcifar100"
+    _DATA_TYPE = "repcifar100"
     _DEFAULT_N_TASKS = 20 
 
 @register_dataset("lfw")
 class LFWPairDataset(PairFaceDataset):
-    _FACE_TYPE = "lfw"
+    _DATA_TYPE = "lfw"
     _DEFAULT_N_TASKS = 5 
 
 @register_dataset("calfw")
 class CALFWPairDataset(PairFaceDataset):
-    _FACE_TYPE = "calfw"
+    _DATA_TYPE = "calfw"
     _DEFAULT_N_TASKS = 5 
 
 @register_dataset("cplfw")
 class CPLFWPairDataset(PairFaceDataset):
-    _FACE_TYPE = "cplfw"
+    _DATA_TYPE = "cplfw"
     _DEFAULT_N_TASKS = 5 
 
 @register_dataset("agedb_30")
 class AGEDB30PairDataset(PairFaceDataset):
-    _FACE_TYPE = "agedb_30"
+    _DATA_TYPE = "agedb_30"
     _DEFAULT_N_TASKS = 5 
 

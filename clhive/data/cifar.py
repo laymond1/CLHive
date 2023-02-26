@@ -9,7 +9,7 @@ from .continual_dataset import ContinualDataset
 
 class CIFARDataset(ContinualDataset):
 
-    _CIFAR_TYPE = None
+    _DATA_TYPE = None
     _DEFAULT_N_TASKS = None
     _MEAN = (0.4914, 0.4822, 0.4465)
     _STD = (0.2470, 0.2435, 0.2615)
@@ -24,14 +24,14 @@ class CIFARDataset(ContinualDataset):
         download: Optional[bool] = True,
     ) -> None:
         
-        assert self._CIFAR_TYPE in [
+        assert self._DATA_TYPE in [
             "cifar10",
             "cifar100",
-        ], "CIFARDataset must be subclassed and a valid _CIFAR_TYPE provided"
+        ], "CIFARDataset must be subclassed and a valid _DATA_TYPE provided"
 
-        if self._CIFAR_TYPE == "cifar10":
+        if self._DATA_TYPE == "cifar10":
             dataset = CIFAR10(root, train=train, download=download)
-        if self._CIFAR_TYPE == "cifar100":
+        if self._DATA_TYPE == "cifar100":
             dataset = CIFAR100(root, train=train, download=download)
 
         super().__init__(
@@ -82,12 +82,12 @@ class CIFARDataset(ContinualDataset):
 
 @register_dataset("cifar10")
 class SplitCIFAR10(CIFARDataset):
-    _CIFAR_TYPE = "cifar10"
+    _DATA_TYPE = "cifar10"
     _DEFAULT_N_TASKS = 5
 
 
 @register_dataset("cifar100")
 class SplitCIFAR100(CIFARDataset):
-    _CIFAR_TYPE = "cifar100"
+    _DATA_TYPE = "cifar100"
     _DEFAULT_N_TASKS = 20       
     

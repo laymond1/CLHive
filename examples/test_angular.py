@@ -12,10 +12,6 @@ from clhive.models import ContinualModel, ContinualAngularModel
 from clhive.methods import auto_method
 from clhive import Trainer, SupConTrainer, ReplayBuffer
 
-import os
-os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-
 
 DEFAULT_RANDOM_SEED = 2023
 seedEverything(DEFAULT_RANDOM_SEED)
@@ -180,7 +176,7 @@ def main(opt):
     )
     rep_evaluator = RepresentationEvaluator(method=agent, eval_scenario=test_scenario, device=device)
 
-    evaluators = [base_evaluator, probe_evaluator, rep_evaluator]
+    evaluators = [probe_evaluator, rep_evaluator]
 
     # Logger 
     # TODO 반복 실험을 한다면 "5_runs" directory를 추가하여 실험 저장

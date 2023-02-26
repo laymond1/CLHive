@@ -60,5 +60,5 @@ class FaceDataset(ContinualDataset):
 
 @register_dataset("casiaweb")
 class CASIAWebDataset(FaceDataset):
-    _CIFAR_TYPE = "casiaweb"
+    _DATA_TYPE = "casiaweb"
     _DEFAULT_N_TASKS = 5

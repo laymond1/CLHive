@@ -12,10 +12,6 @@ from clhive.models import ContinualModel, ContinualAngularModel
 from clhive.methods import auto_method
 from clhive import Trainer, SupConTrainer, ReplayBuffer
 
-import os
-os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-
 
 DEFAULT_RANDOM_SEED = 2023
 seedEverything(DEFAULT_RANDOM_SEED)
@@ -30,7 +26,7 @@ def parse_option():
                         help='num of workers to use')
     parser.add_argument('--n_tasks', type=int, default=5,
                         help='number of tasks')
-    parser.add_argument('--n_epochs', type=int, default=20,
+    parser.add_argument('--n_epochs', type=int, default=50,
                         help='number of training epochs')
 
     # optimization
@@ -54,7 +50,7 @@ def parse_option():
     parser.add_argument('--size', type=int, default=32, help='parameter for RandomResizedCrop')
 
     # method
-    parser.add_argument('--cl_method', type=str, default='crl',
+    parser.add_argument('--cl_method', type=str, default='finetuning',
                         choices=['finetuning', 'er', 'der', 'lwf', 'ewc', 'crl'], help='choose continual learning method')
     parser.add_argument('--buffer_capacity', type=int, default=50*10, help='buffer_capacity')
     parser.add_argument('--backbone_name', type=str, default='resnet18',
