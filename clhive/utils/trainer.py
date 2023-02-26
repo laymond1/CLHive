@@ -9,6 +9,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from .evaluators import BaseEvaluator
+from .generic import adjust_learning_rate, warmup_learning_rate
 from ..loggers import BaseLogger, Logger, AverageMeter, create_if_not_exists
 from ..methods import BaseMethod
 from ..models import ContinualModel
@@ -52,6 +53,7 @@ class Trainer:
 
         for epoch in range(self.n_epochs):
             # adjust learning rate
+            adjust_learning_rate(opt=self.opt, optimizer=self.agent.optim, epoch=epoch)
 
             batch_time = AverageMeter()
             data_time = AverageMeter()
