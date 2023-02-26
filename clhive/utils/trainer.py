@@ -122,17 +122,28 @@ class Trainer:
         self.d = dict()
         self.d['Base'] = []
         self.d['LP'] = []
-        self.d['Rep'] = []
-        # pass
+        # initialize dictionary for face dataset(lfw, calfw, cplfw, agedb_30)
+        if self.evaluator is not None:
+            if isinstance(self.evaluator, List):
+                for evaluator in self.evaluator:
+                    self.d[evaluator.name] = []
+        else:
+            self.d['Rep'] = []
 
     def on_training_end(self):
         """ turn dict into dataframe"""
         self.d['Base'] = np.array(self.d['Base'])
         self.d['LP'] = np.array(self.d['LP'])
         self.d['Rep'] = np.array(self.d['Rep'])
+        # 
+        if self.evaluator is not None:
+            if isinstance(self.evaluator, List):
+                for evaluator in self.evaluator:
+                    self.d[evaluator.name] = np.array(self.d[evaluator.name])
+        else:
+            self.d['Rep'] = np.array(self.d['Rep'])
 
         self.logger.store_results(self.d, self.opt.save_path)
-        # pass
 
     def fit(self):
         """ """

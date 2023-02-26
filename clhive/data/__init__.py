@@ -73,3 +73,5 @@ from .buffer import ReplayBuffer
 from .cifar import SplitCIFAR10, SplitCIFAR100
 from .mnist import SeqMNIST
 from .pair_dataset import RepresentationCIFAR10, RepresentationCIFAR100
+from .pair_dataset import LFWPairDataset, CALFWPairDataset, CPLFWPairDataset, AGEDB30PairDataset
+from .casiaweb import CASIAWebDataset

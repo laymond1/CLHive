@@ -67,9 +67,12 @@ class RepresentationIncremental:
 
     def evaluate(self, feats, 
             FPRs=['1e-4', '5e-4', '1e-3', '5e-3', '5e-2']):
+        # CIFAR: ResNet18[batch, 2, 256], Face: IResNet50[batch, 2, 512]
+        dim = feats.shape[-1]
+
         # pair-wise scores
-        feats = F.normalize(feats.reshape(-1, 256), dim=1)
-        feats = feats.reshape(-1, 2, 256)
+        feats = F.normalize(feats.reshape(-1, dim), dim=1)
+        feats = feats.reshape(-1, 2, dim)
         feats0 = feats[:, 0, :]
         feats1 = feats[:, 1, :]
         scores = torch.sum(feats0 * feats1, dim=1).tolist()
