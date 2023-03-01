@@ -13,24 +13,26 @@ from clhive.methods import auto_method
 from clhive import Trainer, SupConTrainer, ReplayBuffer
 
 
-DEFAULT_RANDOM_SEED = 2023
-seedEverything(DEFAULT_RANDOM_SEED)
-
-
 def parse_option():
     parser = argparse.ArgumentParser('argument for base method training')
 
+    parser.add_argument('--seed', type=int, default=2023,
+                        help='set seed')
     parser.add_argument('--batch_size', type=int, default=512,
                         help='batch_size')
+    parser.add_argument('--test_batch_size', type=int, default=512,
+                        help='test_batch_size')
     parser.add_argument('--num_workers', type=int, default=0,
                         help='num of workers to use')
     parser.add_argument('--n_tasks', type=int, default=5,
                         help='number of tasks')
     parser.add_argument('--n_epochs', type=int, default=50,
                         help='number of training epochs')
+    parser.add_argument('--n_LP_epochs', type=int, default=100,
+                        help='number of training epochs for the linear classifier')
 
     # optimization
-    parser.add_argument('--learning_rate', type=float, default=0.05,
+    parser.add_argument('--learning_rate', type=float, default=0.01,
                         help='learning rate')
     parser.add_argument('--lr_decay_epochs', type=str, default='700,800,900',
                         help='where to decay lr, can be a list')
@@ -126,37 +128,31 @@ elif opt.dataset == 'cifar100':
 
 def main(opt):
 
-    # HParams
-    batch_size = opt.batch_size
-    n_tasks = opt.n_tasks
-    n_epochs = opt.n_epochs
-    buffer_capacity = opt.buffer_capacity
-    backbone_name = opt.backbone_name
-    head_name = opt.rep_method
-    cl_method = opt.cl_method
+    DEFAULT_RANDOM_SEED = opt.seed
+    seedEverything(DEFAULT_RANDOM_SEED)
 
     scenario = ClassIncremental(
-        dataset=dataset, n_tasks=n_tasks, batch_size=batch_size, n_workers=0
+        dataset=dataset, n_tasks=opt.n_tasks, batch_size=opt.batch_size, n_workers=0
     )
 
     print(f"Number of tasks: {scenario.n_tasks} | Number of classes: {scenario.n_classes}")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Model
-    model = ContinualModel.auto_model(backbone_name=backbone_name, scenario=scenario, head_name=head_name).to(device)
+    model = ContinualModel.auto_model(backbone_name=opt.backbone_name, scenario=scenario, head_name=opt.rep_method).to(device)
 
-    buffer = ReplayBuffer(capacity=buffer_capacity, device=device)
+    buffer = ReplayBuffer(capacity=opt.buffer_capacity, device=device)
     # Replay buffer and ER agent
     agent = auto_method(
-        name=cl_method,
+        name=opt.cl_method,
         model=model,
-        optim=SGD(model.parameters(), lr=0.05, momentum=0.9, weight_decay=1e-4),
+        optim=SGD(model.parameters(), lr=opt.learning_rate, momentum=opt.momentum, weight_decay=opt.weight_decay),
         buffer=buffer,
     )
 
     # Base Evaluator
     test_scenario = ClassIncremental(
-        test_dataset, n_tasks=n_tasks, batch_size=batch_size, n_workers=0
+        test_dataset, n_tasks=opt.n_tasks, batch_size=opt.test_batch_size, n_workers=0
     )
     base_evaluator = ContinualEvaluator(method=agent, 
                                         eval_scenario=test_scenario, 
@@ -166,13 +162,13 @@ def main(opt):
     probe_evaluator = ProbeEvaluator(method=agent, 
                                     train_scenario=scenario, 
                                     eval_scenario=test_scenario, 
-                                    n_epochs=n_epochs,
+                                    n_epochs=opt.n_LP_epochs,
                                     device=device)
 
     # Representation Evaluator
     # n_tasks arguments 필요 없음.
     test_scenario = RepresentationIncremental(
-        rep_test_dataset, n_tasks=n_tasks, batch_size=batch_size, n_workers=0
+        rep_test_dataset, n_tasks=opt.n_tasks, batch_size=opt.test_batch_size, n_workers=0
     )
     rep_evaluator = RepresentationEvaluator(method=agent, eval_scenario=test_scenario, device=device)
 
@@ -180,8 +176,8 @@ def main(opt):
 
     # Logger 
     # TODO 반복 실험을 한다면 "5_runs" directory를 추가하여 실험 저장
-    opt.save_path = './save/{}/{}_steps_{}_{}'.format(
-            opt.dataset, opt.n_tasks, opt.cl_method, opt.rep_method
+    opt.save_path = './save/{}/{}_seed/{}_steps_{}_{}'.format(
+            opt.dataset, opt.seed, opt.n_tasks, opt.cl_method, opt.rep_method
             )
     logger = Logger(opt.n_tasks)
     logger.open_txt(opt.save_path)
@@ -189,7 +185,7 @@ def main(opt):
 
     # Trainer
     trainer = Trainer(
-        opt=opt, method=agent, scenario=scenario, evaluator=evaluators, n_epochs=n_epochs, device=device, logger=logger
+        opt=opt, method=agent, scenario=scenario, evaluator=evaluators, n_epochs=opt.n_epochs, device=device, logger=logger
     )
     trainer.fit()
 
