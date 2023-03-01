@@ -80,7 +80,7 @@ class SupConTrainer:
                                      optimizer=self.agent.optim)
 
                 # Supcon loss
-                self.agent.loss = SupConLoss(temperature=0.05, contrast_mode='all')
+                self.agent.loss = SupConLoss(temperature=self.opt.temp, contrast_mode='all')
 
                 loss = self.agent.supcon_observe(x, y, t, not_aug_x)
 

@@ -20,7 +20,7 @@ def parse_option():
                         help='set seed')
     parser.add_argument('--batch_size', type=int, default=512,
                         help='batch_size')
-    parser.add_argument('--test_batch_size', type=int, default=512,
+    parser.add_argument('--test_batch_size', type=int, default=1024,
                         help='test_batch_size')
     parser.add_argument('--num_workers', type=int, default=0,
                         help='num of workers to use')
@@ -32,9 +32,9 @@ def parse_option():
                         help='number of training epochs for the linear classifier')
 
     # optimization
-    parser.add_argument('--learning_rate', type=float, default=0.01,
+    parser.add_argument('--learning_rate', type=float, default=0.1,
                         help='learning rate')
-    parser.add_argument('--lr_decay_epochs', type=str, default='700,800,900',
+    parser.add_argument('--lr_decay_epochs', type=str, default='20,40',
                         help='where to decay lr, can be a list')
     parser.add_argument('--lr_decay_rate', type=float, default=0.1,
                         help='decay rate for learning rate')
@@ -61,7 +61,7 @@ def parse_option():
                         choices=['linear', 'arcface', 'cosface', 'sphereface', 'supconmlp'], help='choose representation learning method (head_name)')
     
     # temperature
-    parser.add_argument('--temp', type=float, default=0.07,
+    parser.add_argument('--temp', type=float, default=0.1,
                         help='temperature for loss function')
 
     # other setting
