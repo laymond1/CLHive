@@ -119,7 +119,7 @@ def main(opt):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Model
-    model = ContinualModel.auto_model(backbone_name=opt.backbone_name, scenario=scenario, head_name=opt.rep_method).to(device)
+    model = ContinualAngularModel.auto_model(backbone_name=opt.backbone_name, scenario=scenario, head_name=opt.rep_method).to(device)
 
     buffer = ReplayBuffer(capacity=opt.buffer_capacity, device=device)
     # Replay buffer and ER agent
