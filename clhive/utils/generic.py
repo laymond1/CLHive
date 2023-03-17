@@ -12,9 +12,7 @@ import random
 import torch
 
 
-DEFAULT_RANDOM_SEED = 2023
-
-def seedEverything(seed=DEFAULT_RANDOM_SEED):
+def seedEverything(seed):
     random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
