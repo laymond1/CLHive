@@ -120,6 +120,11 @@ def main(opt):
 
     # Model
     model = ContinualModel.auto_model(backbone_name=opt.backbone_name, scenario=scenario, head_name=opt.rep_method).to(device)
+    if torch.cuda.device_count() > 1:
+        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
+        model = torch.nn.DataParallel(model)
+
 
     buffer = ReplayBuffer(capacity=opt.buffer_capacity, device=device)
     # Replay buffer and ER agent

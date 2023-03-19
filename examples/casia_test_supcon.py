@@ -121,6 +121,10 @@ def main(opt):
 
     print(f"Number of tasks: {scenario.n_tasks} | Number of classes: {scenario.n_classes}")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.device_count() > 1:
+        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
+        model = torch.nn.DataParallel(model)
 
     # Model
     model = ContinualModel.auto_model(backbone_name=opt.backbone_name, scenario=scenario, head_name=opt.rep_method).to(device)
