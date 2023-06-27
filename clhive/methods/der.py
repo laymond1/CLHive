@@ -40,7 +40,7 @@ class DER(ER):
             n_replay_samples=n_replay_samples,
         )
 
-        self.alpha = 1
+        self.alpha = .5
 
     @property
     def name(self) -> str:
