@@ -16,7 +16,7 @@ from .evaluators import BaseEvaluator
 from .generic import adjust_learning_rate, warmup_learning_rate
 from ..loggers import BaseLogger, Logger, AverageMeter, create_if_not_exists
 from ..methods import BaseMethod
-from ..models import ContinualModel, ContinualAngularModel, SupConLoss
+from ..models import ContinualModel, ContinualAngularModel, SupConLoss, AsymSupConLoss
 from ..scenarios import ClassIncremental, TaskIncremental
 
 
@@ -38,6 +38,7 @@ class SupConTrainer:
 
         self.opt = opt
         self.agent = method.to(self.device)
+        self.agent.opt = opt # TODO: need to be updated in the future
         self.scenario = scenario
         self.n_epochs = n_epochs
         self.evaluator = evaluator
@@ -80,7 +81,12 @@ class SupConTrainer:
                                      optimizer=self.agent.optim)
 
                 # Supcon loss
-                self.agent.loss = SupConLoss(temperature=self.opt.temp, contrast_mode='all')
+                if self.opt.cl_method == 'scr':
+                    self.agent.loss = SupConLoss(temperature=self.opt.temp, contrast_mode='all')
+                elif self.opt.cl_method in ['tncr', 'vncr', 'co2l']:
+                    self.agent.loss = AsymSupConLoss(temperature=self.opt.temp, contrast_mode='all')
+                else:
+                    self.agent.loss = SupConLoss(temperature=self.opt.temp, contrast_mode='all')
 
                 loss = self.agent.supcon_observe(x, y, t, not_aug_x)
 
@@ -114,7 +120,10 @@ class SupConTrainer:
 
     def on_task_start(self, task_id: int):
         """ """
-        pass
+        # if CO2L
+        if self.opt.cl_method == 'co2l':
+            self.agent.model2 = copy.deepcopy(self.agent.model)
+        # pass
 
     def on_task_end(self, task_id: int):
         """_summary_

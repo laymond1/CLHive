@@ -74,4 +74,4 @@ from .vision_transformer import (
 )
 from .mlp import LinearClassifier, DistLinear, MLP
 from .continual_angular_model import BaseFace, ArcFace, CosFace, GAsoftmax, SphereFace
-from .supcon import SupConLoss
+from .supcon import SupConLoss, AsymSupConLoss
