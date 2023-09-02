@@ -64,7 +64,7 @@ class Trainer:
                 # batch data load time
                 data_time.update(time.time() - end)
 
-                x, y, t = x.to(self.device), y.to(self.device), t.to(self.device)
+                x, y, t, not_aug_x = x.to(self.device), y.to(self.device), t.to(self.device), not_aug_x.to(self.device)
                 loss = self.agent.observe(x, y, t, not_aug_x)
                 # update metric
                 losses.update(loss.item(), y.shape[0])

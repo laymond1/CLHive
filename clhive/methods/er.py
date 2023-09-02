@@ -63,6 +63,8 @@ class ER(BaseMethod):
         self, x: torch.FloatTensor, y: torch.FloatTensor, t: torch.FloatTensor, not_aug_x: torch.FloatTensor
     ) -> torch.FloatTensor:
         
+        real_batch_size = x.shape[0]
+        
         if len(self.buffer) > 0:
 
             if self.n_replay_samples is None:
@@ -78,7 +80,7 @@ class ER(BaseMethod):
 
         self.update(loss)
 
-        self.buffer.add(batch={"x": x, "y": y, "t": t})
+        self.buffer.add(batch={"x": not_aug_x, "y": y[:real_batch_size], "t": t[:real_batch_size]})
 
         return loss
 
