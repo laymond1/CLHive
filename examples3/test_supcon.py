@@ -56,7 +56,7 @@ def parse_option():
 
     # method
     parser.add_argument('--cl_method', type=str, default='finetuning',
-                        choices=['finetuning', 'er', 'der', 'lwf', 'ewc', 'crl', 'scr', 'tncr', 'vncr', 'co2l'], help='choose continual learning method')
+                        choices=['finetuning', 'er', 'der', 'lwf', 'ewc', 'crl', 'scr', 'tncr', 'vncr', 'co2l', 'vencr', 'vco2l', 'co2l_asym', 'co2l_ird'], help='choose continual learning method')
     parser.add_argument('--buffer_capacity', type=int, default=50*10, help='buffer_capacity')
     parser.add_argument('--backbone_name', type=str, default='resnet18',
                         choices=['resnet18', None], help='choose backbone_name')
@@ -70,6 +70,8 @@ def parse_option():
     parser.add_argument('--current_temp', type=float, default=0.2,)
     parser.add_argument('--past_temp', type=float, default=0.01,)
     parser.add_argument('--distill_power', type=float, default=1.0,)
+    # VNCR & VENCR
+    parser.add_argument('--gamma', type=float, default=0.5,)
 
     # other setting
     parser.add_argument('--cosine', action='store_true',
@@ -161,15 +163,12 @@ def main(opt):
 
     # Model
     model = ContinualModel.auto_model(backbone_name=opt.backbone_name, scenario=scenario, head_name=opt.rep_method).to(device)
-    # model2 = ContinualModel.auto_model(backbone_name=opt.backbone_name, scenario=scenario, head_name=opt.rep_method).to(device)
-    # model2.eval()
 
     buffer = ReplayBuffer(capacity=opt.buffer_capacity, device=device)
     # Replay buffer and ER agent
     agent = auto_method(
         name=opt.cl_method,
         model=model,
-        # model2=model2,
         optim=SGD(model.parameters(), lr=opt.learning_rate, momentum=opt.momentum, weight_decay=opt.weight_decay),
         buffer=buffer,
         transform=method_transform,

@@ -26,7 +26,6 @@ class CO2L(ER):
     def __init__(
         self,
         model: Union[ContinualModel, ContinualAngularModel, torch.nn.Module],
-        # model2: Union[ContinualModel, ContinualAngularModel, torch.nn.Module],
         optim: torch.optim,
         buffer: ReplayBuffer,
         transform: Optional[torch.nn.Module] = None,
