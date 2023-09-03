@@ -6,7 +6,7 @@ from . import register_method, BaseMethod
 from .er import ER
 from ..data import ReplayBuffer
 from ..loggers import BaseLogger
-from ..models import ContinualModel, ContinualAngularModel, SupConLoss
+from ..models import ContinualModel, ContinualAngularModel, SupConLoss, AsymSupConLoss
 
 from torchvision import transforms
 from clhive.utils.generic import seedEverything, warmup_learning_rate, TwoCropTransform
@@ -68,7 +68,7 @@ class VNCR(ER):
     def supcon_observe(
         self, x: torch.FloatTensor, y: torch.FloatTensor, t: torch.FloatTensor, not_aug_x: torch.FloatTensor
     ) -> torch.FloatTensor:
-        assert isinstance(self.loss, SupConLoss), "supcon_observe function must have SupconLoss"
+        assert isinstance(self.loss, AsymSupConLoss), "supcon_observe function must have AsymSupConLoss"
         real_bsz = y.size(0)
         
         if len(self.buffer) > 0:
@@ -77,31 +77,35 @@ class VNCR(ER):
             x, y, t = torch.cat([not_aug_x, re_data["x"]], dim=0), torch.cat([y, re_data["y"]], dim=0), torch.cat([t, re_data["t"]], dim=0)
             
             # virtual(mixup) negative samples
-            n_not_aug_x = partial_mixup(input=x, gamma=0.5, indices=torch.randperm(x.size(0)))
+            neg_not_aug_x = partial_mixup(input=x, gamma=self.opt.gamma, indices=torch.randperm(x.size(0)))
             # create label and task id
-            n_y = torch.ones(y.size(0), dtype=torch.long).fill_((t[0]+1)*2).to(y.device)
-            n_t = torch.ones(y.size(0), dtype=torch.long).fill_(t[0]).to(t.device)
+            neg_y = torch.ones(y.size(0), dtype=torch.long).fill_(
+                (self.current_task+1) * self.opt.n_classes_per_task
+                ).to(y.device)
+            neg_t = torch.ones(y.size(0), dtype=torch.long).fill_(self.current_task).to(t.device)
             # merge with all samples
-            x = torch.cat([x, n_not_aug_x], dim=0)
+            x = torch.cat([x, neg_not_aug_x], dim=0)
         else:
             # virtual(mixup) negative samples
-            n_not_aug_x = partial_mixup(input=not_aug_x, gamma=0.5, indices=torch.randperm(not_aug_x.size(0)))
+            neg_not_aug_x = partial_mixup(input=not_aug_x, gamma=self.opt.gamma, indices=torch.randperm(not_aug_x.size(0)))
             # create label and task id
-            n_y = torch.ones(not_aug_x.size(0), dtype=torch.long).fill_((t[0]+1)*2).to(y.device)
-            n_t = torch.ones(not_aug_x.size(0), dtype=torch.long).fill_(t[0]).to(t.device)
+            neg_y = torch.ones(not_aug_x.size(0), dtype=torch.long).fill_(
+                (self.current_task+1) * self.opt.n_classes_per_task
+                ).to(y.device)
+            neg_t = torch.ones(not_aug_x.size(0), dtype=torch.long).fill_(self.current_task).to(t.device)
             # merge with all samples
-            x = torch.cat([not_aug_x, n_not_aug_x], dim=0)
+            x = torch.cat([not_aug_x, neg_not_aug_x], dim=0)
         
         # merge with all samples
         x = torch.cat(twocifar10(x), dim=0)            
-        y, t = torch.cat([y, n_y], dim=0), torch.cat([t, n_t], dim=0)
+        y, t = torch.cat([y, neg_y], dim=0), torch.cat([t, neg_t], dim=0)
 
         bsz = y.shape[0]
         # compute loss
         features = self.model(x)
         f1, f2 = torch.split(features, [bsz, bsz], dim=0)
         features = torch.cat([f1.unsqueeze(1), f2.unsqueeze(1)], dim=1)
-        loss = self.loss(features, y)
+        loss = self.loss(features, y, target_labels=list(range((self.current_task+1) * self.opt.n_classes_per_task)))
         
         self.update(loss)
         

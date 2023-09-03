@@ -27,6 +27,8 @@ def parse_option():
                         help='num of workers to use')
     parser.add_argument('--n_tasks', type=int, default=5,
                         help='number of tasks')
+    parser.add_argument('--n_classes_per_task', type=int, default=2,
+                        help='number of classes per task')
     parser.add_argument('--n_epochs', type=int, default=50,
                         help='number of training epochs')
     parser.add_argument('--n_LP_epochs', type=int, default=100,
@@ -54,7 +56,7 @@ def parse_option():
 
     # method
     parser.add_argument('--cl_method', type=str, default='finetuning',
-                        choices=['finetuning', 'er', 'der', 'lwf', 'ewc', 'crl', 'scr', 'tncr', 'vncr'], help='choose continual learning method')
+                        choices=['finetuning', 'er', 'der', 'lwf', 'ewc', 'crl', 'scr', 'tncr', 'vncr', 'co2l', 'vencr', 'vco2l'], help='choose continual learning method')
     parser.add_argument('--buffer_capacity', type=int, default=50*10, help='buffer_capacity')
     parser.add_argument('--backbone_name', type=str, default='resnet18',
                         choices=['resnet18', None], help='choose backbone_name')
@@ -64,6 +66,12 @@ def parse_option():
     # temperature
     parser.add_argument('--temp', type=float, default=0.1,
                         help='temperature for loss function')
+    ## CO2L
+    parser.add_argument('--current_temp', type=float, default=0.2,)
+    parser.add_argument('--past_temp', type=float, default=0.01,)
+    parser.add_argument('--distill_power', type=float, default=1.0,)
+    # VNCR & VENCR
+    parser.add_argument('--gamma', type=float, default=0.5,)
 
     # other setting
     parser.add_argument('--cosine', action='store_true',
@@ -145,6 +153,10 @@ def main(opt):
     scenario = ClassIncremental(
         dataset=dataset, n_tasks=opt.n_tasks, batch_size=opt.batch_size, n_workers=0
     )
+
+    # Check the number of classes per task
+    assert scenario.dataset.n_classes_per_task == opt.n_classes_per_task, \
+        f"{scenario.dataset.n_classes_per_task} != {opt.n_classes_per_task} Number of classes per task is not matched."
 
     print(f"Number of tasks: {scenario.n_tasks} | Number of classes: {scenario.n_classes}")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

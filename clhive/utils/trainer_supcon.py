@@ -81,9 +81,9 @@ class SupConTrainer:
                                      optimizer=self.agent.optim)
 
                 # Supcon loss
-                if self.opt.cl_method == 'scr':
+                if self.opt.cl_method in ['scr', 'co2l_ird']:
                     self.agent.loss = SupConLoss(temperature=self.opt.temp, contrast_mode='all')
-                elif self.opt.cl_method in ['tncr', 'vncr', 'co2l']:
+                elif self.opt.cl_method in ['tncr', 'vncr', 'co2l', 'vencr', 'vco2l', 'co2l_asym']:
                     self.agent.loss = AsymSupConLoss(temperature=self.opt.temp, contrast_mode='all')
                 else:
                     self.agent.loss = SupConLoss(temperature=self.opt.temp, contrast_mode='all')
@@ -121,7 +121,7 @@ class SupConTrainer:
     def on_task_start(self, task_id: int):
         """ """
         # if CO2L
-        if self.opt.cl_method == 'co2l':
+        if self.opt.cl_method in ['co2l', 'vco2l']:
             self.agent.model2 = copy.deepcopy(self.agent.model)
         # pass
 
